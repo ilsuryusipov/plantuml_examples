@@ -1,0 +1,124 @@
+@startuml
+title Sequence diagram
+
+actor "User" as U
+box "API Gateway"
+participant "Nginx" as N
+participant "Static files\nstorage" as S
+participant "API Gateway\nendpoint" as GAPI
+participant "Auth Server" as A
+end box
+participant "Vault Server" as V
+box "[Micro]services"
+collections "Sync API endpoints" as SAPI
+collections "Async API endpoints" as ASAPI
+end box
+queue "Async API queue" as Q
+
+database "DataBase" as DB
+
+== Web page getting ==
+
+U -> N: http://site
+activate N
+
+N -> S: get *.html *.js *.css
+activate S
+
+' S --> N
+' deactivate S
+return
+
+' N --> U
+' deactivate N
+return
+
+''''''''' SYNC API CALL '''''''''
+== Sync API call ==
+
+U -> N : sync api call
+activate N
+
+N -> GAPI: retranslate request
+activate GAPI
+
+GAPI -> A: check permission
+activate A
+
+' alt#Gold #Pink permission denied
+'     A --> GAPI
+'     GAPI --> N
+'     N --> U
+' end
+
+A --> GAPI
+deactivate A
+
+GAPI -> SAPI: choose ms and\nretranslate request
+activate SAPI
+
+SAPI --> V: get internal credentials
+activate V
+
+V --> SAPI: credentials
+deactivate V
+
+SAPI --> SAPI
+SAPI --> ASAPI
+SAPI --> DB
+
+SAPI --> GAPI: result
+deactivate SAPI
+
+GAPI --> N: result
+deactivate GAPI
+
+N -> U: result
+deactivate N
+
+''''''''' ASYNC API CALL '''''''''
+== Async API call ==
+
+U -> N : async api call
+activate N
+
+N -> GAPI : retranslate request
+activate GAPI
+
+GAPI -> A : check permission
+activate A
+
+A --> GAPI
+deactivate A
+
+GAPI -> ASAPI: choose ms and\nretranslate request
+activate ASAPI
+
+ASAPI --> V: get internal credentials
+activate V
+
+V --> ASAPI: credentials
+deactivate V
+
+ASAPI -> DB : register task into DB
+activate DB
+
+DB --> ASAPI
+deactivate DB
+
+ASAPI -> Q : add task to queue
+activate Q
+
+Q --> ASAPI
+deactivate Q
+
+ASAPI --> GAPI: task accepted
+deactivate ASAPI
+
+GAPI --> N: task accepted
+deactivate GAPI
+
+N --> U: task accepted
+deactivate N
+
+@enduml

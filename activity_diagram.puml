@@ -1,0 +1,26 @@
+@startuml
+title Activity diagram
+
+start
+
+if (multiprocessor?) then (yes)
+    fork 
+        :Action 1;
+    fork again
+        :Action 2;
+    end fork
+else (no)
+    :Action 3;
+    if (cond?) then (yes)
+        :Action 4;
+    else (no)
+        :Action 5;
+        end
+    endif
+endif
+
+:Action 6;
+
+stop
+
+@enduml
